@@ -1,0 +1,77 @@
+{
+  "date": "2026-10-03",
+  "scope": "private local lab; injected causes, not customer incidents",
+  "results": {
+    "latency": {
+      "observed_seconds": 1.032,
+      "logs": {
+        "bytes": 2370,
+        "services": [
+          "backend",
+          "nginx"
+        ]
+      }
+    },
+    "postgres": {
+      "statuses": [
+        503,
+        504,
+        504,
+        504,
+        504,
+        504,
+        504,
+        504,
+        504,
+        504
+      ],
+      "logs": {
+        "bytes": 5096,
+        "services": [
+          "postgres",
+          "backend",
+          "db-exhaust"
+        ]
+      }
+    },
+    "redis": {
+      "items": 503,
+      "ready": 503,
+      "live": 200,
+      "logs": {
+        "bytes": 3292,
+        "services": [
+          "backend",
+          "redis"
+        ]
+      }
+    },
+    "nginx": {
+      "status": 502,
+      "loki_streams": 2,
+      "logs": {
+        "bytes": 4214,
+        "services": [
+          "nginx"
+        ]
+      }
+    },
+    "resources": {
+      "cpu_cores": 0.24999338018589895,
+      "docker_stats": "25.15% 51.55MiB / 64MiB",
+      "application_status": 200,
+      "logs": "No application log expected from bounded CPU helper"
+    },
+    "failure_metric_evidence": {
+      "latency_histogram_sum": [
+        "http_request_duration_seconds_sum{method=\"GET\",route=\"/items\"} 1.0249522500000694"
+      ],
+      "redis_failure_counter": [
+        "dependency_failures_total{dependency=\"redis\"} 1.0"
+      ],
+      "postgres_failure_counter": [
+        "dependency_failures_total{dependency=\"postgres\"} 3.0"
+      ]
+    }
+  }
+}

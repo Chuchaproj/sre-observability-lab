@@ -14,6 +14,7 @@ sre-observability-lab/
 ├── Makefile
 ├── README.md
 ├── RUNBOOK.md
+├── SECURITY.md
 ├── SLO.md
 ├── TREE.txt
 ├── VALIDATION.md
@@ -23,7 +24,9 @@ sre-observability-lab/
 ├── compose.yaml
 ├── docs/
 │   ├── decisions.md
+│   ├── incident-evidence.json
 │   ├── load-test.md
+│   ├── security-evidence.json
 │   └── security-scan.md
 ├── load/
 │   └── load.js

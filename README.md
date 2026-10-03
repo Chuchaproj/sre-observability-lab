@@ -1,6 +1,6 @@
 # sre-observability-lab
 
-Production-like homelab project created to practice and demonstrate DevOps/SRE engineering patterns. It is not presented as commercial production experience.
+Production-like homelab / portfolio project created to practice and demonstrate DevOps/SRE engineering patterns. It is not presented as commercial production experience.
 
 An isolated troubleshooting lab with real HTTP requests, async queue processing, stateful dependencies, metrics, logs and bounded fault injection. No published numbers represent commercial production performance. Read [VALIDATION.md](VALIDATION.md) for the exact checks performed.
 
@@ -69,6 +69,10 @@ The commands above are a catalogue, not a sequence to run without recovery. [INC
 
 Single-instance databases/broker/monitoring have no HA guarantee. Named volumes survive `make down`; this is persistence, not a backup. Do not remove volumes as an incident recovery shortcut. `docker compose ps` and logs distinguish startup/credential/port failures. On Docker Desktop, container panels use cgroup IDs; map them with `docker inspect`. Node filesystem mounts can reflect the macOS bind mount, while CPU/RAM/network describe the Linux VM. Native Linux monitoring remains a separate validation boundary. No external alert delivery, public DNS, TLS, Kubernetes or cloud service is claimed here; those belong to other portfolio scopes.
 
+## What this project demonstrates
+
 This lab demonstrates evidence-led triage, bounded failure injection, edge versus backend visibility, queue semantics, RED/USE metrics, proposed SLOs and recovery verification.
 
 See [local image security findings](docs/security-scan.md) and [publishable repository tree](TREE.txt).
+
+See [SECURITY.md](SECURITY.md) for the audited image scope and remaining security limitations.

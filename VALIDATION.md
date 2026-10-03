@@ -1,5 +1,11 @@
 # Local validation — sre-observability-lab
 
+## Final portfolio audit
+
+The final audit rebuilt the documented custom image tag, reran application tests and applicable linters, and ran Trivy with all detected severities. [SECURITY.md](SECURITY.md) supersedes the previous image snapshot. Local Git history is preserved with additional normal commits. No publication or hosted workflow run occurred.
+
+Current source, staged files and history were scanned. Local ignored generated `.env` files were scanned separately: two credential detections in the Kubernetes lab, three in the SRE lab; the IaC service has no credential `.env`. Credentials remain private, ignored and mode 0600; their values are not included in any report. Publication/source scans reported no leaks.
+
 ## Observed results
 
 | Check | Result | Evidence / scope |
@@ -9,14 +15,14 @@
 | Docker / Compose | PASS | Final custom backend built; Compose config accepted; complete stack became healthy; API exact write/read smoke and WebSocket passed. |
 | Metrics | PASS | Eight targets up: backend, containers, nginx, node, postgres, prometheus, rabbitmq, redis. HTTP counters/histograms, CPU/RAM/disk/network, raw container cgroups, database connections, Redis memory, broker queue and Nginx connections returned real series. |
 | Grafana / logs | PASS | Provisioned SRE dashboard read back via API; Loki received app and edge logs, including gateway-error queries. |
-| Alert configuration | PASS | Promtool config and 13 Prometheus rules; outage rule unit test. Loki gateway-error rule configured. Not every threshold was driven to firing. |
+| Alert configuration | PASS | Promtool config and 12 Prometheus rules (redundant backend-error alert removed in final audit); outage rule unit test. Loki gateway-error rule configured. Not every threshold was driven to firing. |
 | Latency incident | PASS | Configured 1 s delay: observed 1.127 s HTTP response; recovery smoke passed. |
 | PostgreSQL exhaustion | PASS | Helper held 29 connections; 20 client requests returned 503/504; recovery smoke passed. |
 | Redis outage | PASS | API 503, readiness 503 and liveness 200; dependency restoration and smoke passed. |
 | Gateway incident | PASS | Stopped backend produced Nginx 502; Loki query returned two streams; recovery passed. During startup/DNS transition 504 is also possible. |
 | Resource pressure | PASS | Dedicated container capped at 0.25 CPU / 64 MiB, bounded to 120 s. Observed 0.25013 core and 52.14 MiB; recovery passed. Host disk was not filled. |
 | Broker runtime | PASS | Publisher-confirmed job UUID was processed and persisted. Under PostgreSQL exhaustion consumer emitted retry events; queued job persisted after recovery with the SAME backend container ID (no backend restart). |
-| Clean k6 baseline | PASS | Isolated 5 VUs / 2 min: 2796 requests, 0 failed, all checks passed, p95 22.32 ms; both thresholds passed. See [measured snapshot](docs/load-test.md). |
+| Clean k6 baseline | PASS | Isolated 5 VUs / 2 min: 2791 requests, 0 failed, all checks passed, p95 25.17 ms; both thresholds passed. See [measured snapshot](docs/load-test.md). |
 | Runtime dependency audit | PASS | Pinned Python runtime graph: pip-audit reported no known vulnerabilities. OS scan has findings below. |
 | Kubernetes / Helm / Terraform / Ansible | NOT APPLICABLE | They are implemented and validated in the other portfolio repositories. |
 
@@ -47,9 +53,13 @@ Date: 2026-10-03. Host: macOS, 8 GiB physical RAM; Docker Desktop Linux VM appro
 
 - PASS: Gitleaks scanned local Git history, staged changes and the tracked publication tree. No finding was reported. This is a detector result, not proof that every possible secret is absent.
 - PASS: `.env`, environment variants, virtual environments, generated artifacts and private key files are ignored; `.env.example` is tracked. No local credential file is included in the publication tree.
-- EXECUTED WITH FINDINGS: custom runtime image Trivy scan reported 44 HIGH, 60 MEDIUM, 60 LOW and 2 UNKNOWN findings; zero CRITICAL. The HIGH findings have no fixed package version in the scan result. See [security report](docs/security-scan.md). Third-party stack images and exploitability were not audited. The CI vulnerability scan reports findings without blocking; secret scanning blocks.
+- PASS WITH SCOPE LIMITS: the final Alpine custom runtime scan reports zero detected vulnerabilities. The previous Debian image had 44 HIGH; the audit investigates every unique CVE and removes affected base packages without suppressions. See [security report](docs/security-scan.md). Third-party stack images and exploitability were not audited. The CI custom-runtime vulnerability gate blocks HIGH/CRITICAL; secret scanning also blocks.
 - PASS: actionlint and YAML lint checked workflow syntax. GitHub Actions execution, environment protection and CI status badges are **NOT TESTED** because the repository has not been published. No badge asserts a successful remote check.
 
 ## Recheck
 
 Run `make install test lint secrets` in a clean checkout with the prerequisites from README. Generate local credentials where required; do not copy someone else's `.env`. Follow README deployment and cleanup commands one project at a time. Image findings and dependency versions are a dated snapshot; refresh scans before publication or wider use.
+
+Final runtime recheck: complete rebuilt stack, eight healthy scrape targets and Grafana/Loki read-back passed. Promtool validated 12 rules and its outage unit scenario. All five incidents and exact write/read recovery passed: 1.032 s latency, PostgreSQL 503/504, Redis items/readiness 503 with liveness 200, Nginx 502 with Loki streams, resource helper 0.24999 core and 51.55 MiB under 64 MiB while API stayed 200. Consumer recovered a queued job after DB exhaustion without container replacement. Final isolated k6 run: 2791 requests, zero failures, p95 25.17 ms, maximum 695.33 ms; both declared thresholds passed. This is not a maximum-latency guarantee.
+
+Additional telemetry check: the latency request increased the histogram sum beyond one second; Redis and PostgreSQL outages produced their dependency failure counters. See [incident evidence](docs/incident-evidence.json). No assertion is made that every alert fired or external delivery occurred.

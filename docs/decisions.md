@@ -14,4 +14,8 @@ Redis stores a five-second versioned list cache. PostgreSQL writes commit before
 
 Schema bootstrap acquires a transaction-scoped PostgreSQL advisory lock before table creation, preventing concurrent replica DDL races. This is a minimal lab bootstrap, not a substitute for versioned production migrations.
 
-`make secrets` scans Git history, staged changes and an exported tracked source tree. Generated ignored local credentials are not publication content, but a forced/staged secret file is still inspected. There is no allowlist for credential-bearing .env paths.
+`make secrets` scans Git history, staged changes and the current tracked and nonignored source files. Generated ignored local credentials are not publication content, but a forced/staged secret file is still inspected. There is no allowlist for credential-bearing .env paths.
+
+The runtime uses a digest-pinned Python 3.11 / Alpine 3.24 base. The API dependency stage installs binary musllinux wheels into a virtual environment; only that environment and application source enter the runtime. No compiler or pip/setuptools/wheel is retained. This removes unused Debian system utilities instead of suppressing their findings. The trade-off is musl compatibility: new dependencies must provide matching wheels or require an explicitly reviewed build stage. Native arm64 execution is checked locally; amd64 execution belongs to the first hosted CI run.
+
+The redundant NginxUpstreamErrors Prometheus alert was removed: backend metrics cannot measure rejected gateway requests. The dedicated Loki NginxGatewayErrors rule measures those log events. Resource-pressure and DB-blocker helpers reuse the audited backend runtime instead of an unrelated older Python image.
