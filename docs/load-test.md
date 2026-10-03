@@ -1,6 +1,6 @@
 # Measured local load snapshot
 
-Date: 2026-10-03. This is a homelab measurement on an 8 GiB Mac with a Docker Desktop Linux VM of approximately 3.8 GiB. Other portfolio stacks were stopped. It is not a production benchmark, capacity plan or cross-hardware comparison.
+Date: 2026-10-03. This is a homelab measurement on an 8 GiB Mac with a Docker Desktop Linux VM of approximately 3.8 GiB. Other large workloads were stopped. It is not a production benchmark, capacity plan or cross-hardware comparison.
 
 After recovery and a successful smoke test, `make load` ran the committed k6 script: five virtual users for two minutes, repeated reads through Nginx, and a 200 ms pause per iteration. No fault was injected or other deployment performed during this final audited Alpine-runtime run. Earlier Debian-runtime results are retained in Git history rather than presented as this image’s measurement.
 
