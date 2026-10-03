@@ -1,0 +1,62 @@
+sre-observability-lab/
+├── .dockerignore
+├── .env.example
+├── .github/
+│   └── workflows/
+│       └── checks.yml
+├── .gitignore
+├── .gitleaks.toml
+├── .hadolint.yaml
+├── .yamllint
+├── Dockerfile
+├── INCIDENTS.md
+├── LICENSE
+├── Makefile
+├── README.md
+├── RUNBOOK.md
+├── SLO.md
+├── TREE.txt
+├── VALIDATION.md
+├── app/
+│   ├── __init__.py
+│   └── main.py
+├── compose.yaml
+├── docs/
+│   ├── decisions.md
+│   ├── load-test.md
+│   └── security-scan.md
+├── load/
+│   └── load.js
+├── monitoring/
+│   ├── alertmanager.yml
+│   ├── alerts.yml
+│   ├── config.alloy
+│   ├── grafana/
+│   │   ├── dashboards/
+│   │   │   ├── platform.json
+│   │   │   └── provider.yml
+│   │   └── datasources/
+│   │       └── sources.yml
+│   ├── loki-rules/
+│   │   └── lab/
+│   │       └── edge.yml
+│   ├── loki.yml
+│   ├── prometheus.yml
+│   └── rule-tests.yml
+├── nginx/
+│   └── nginx.conf
+├── pyproject.toml
+├── rabbitmq/
+│   └── enabled_plugins
+├── requirements-dev.txt
+├── requirements.txt
+├── scripts/
+│   ├── check-secrets.sh
+│   ├── exhaust-db.py
+│   ├── incident.sh
+│   ├── init-env.py
+│   ├── resource-pressure.py
+│   ├── set-latency.py
+│   └── smoke.py
+└── tests/
+    └── test_api.py

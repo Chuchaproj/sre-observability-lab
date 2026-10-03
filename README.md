@@ -70,3 +70,5 @@ The commands above are a catalogue, not a sequence to run without recovery. [INC
 Single-instance databases/broker/monitoring have no HA guarantee. Named volumes survive `make down`; this is persistence, not a backup. Do not remove volumes as an incident recovery shortcut. `docker compose ps` and logs distinguish startup/credential/port failures. On Docker Desktop, container panels use cgroup IDs; map them with `docker inspect`. Node filesystem mounts can reflect the macOS bind mount, while CPU/RAM/network describe the Linux VM. Native Linux monitoring remains a separate validation boundary. No external alert delivery, public DNS, TLS, Kubernetes or cloud service is claimed here; those belong to other portfolio scopes.
 
 This lab demonstrates evidence-led triage, bounded failure injection, edge versus backend visibility, queue semantics, RED/USE metrics, proposed SLOs and recovery verification.
+
+See [local image security findings](docs/security-scan.md) and [publishable repository tree](TREE.txt).
