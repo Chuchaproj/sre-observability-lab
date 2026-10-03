@@ -1,0 +1,70 @@
+groups:
+  - name: platform
+    rules:
+      - alert: BackendUnavailable
+        expr: up{job="backend"} == 0
+        for: 1m
+        labels: {severity: critical}
+        annotations: {summary: Backend metrics endpoint unavailable, runbook: RUNBOOK.md}
+      - alert: BackendErrorRate
+        expr: sum(rate(http_requests_total{status=~"5.."}[5m])) / clamp_min(sum(rate(http_requests_total[5m])), 0.001) > 0.05
+        for: 2m
+        labels: {severity: warning}
+        annotations: {summary: More than five percent server errors, runbook: RUNBOOK.md}
+      - alert: BackendLatency
+        expr: histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m]))) > 0.5
+        for: 2m
+        labels: {severity: warning}
+        annotations: {summary: HTTP p95 exceeds 500ms, runbook: RUNBOOK.md}
+      - alert: BackendMemory
+        expr: process_resident_memory_bytes{job="backend"} > 200 * 1024 * 1024
+        for: 5m
+        labels: {severity: warning}
+        annotations: {summary: Backend memory above lab threshold, runbook: RUNBOOK.md}
+      - alert: DependencyFailure
+        expr: sum by (dependency) (rate(dependency_failures_total[2m])) > 0
+        for: 1m
+        labels: {severity: warning}
+        annotations: {summary: Required dependency failing, runbook: RUNBOOK.md}
+
+      - alert: PostgresConnectionsHigh
+        expr: sum(pg_stat_database_numbackends{datname!=""}) / scalar(pg_settings_max_connections) > 0.8
+        for: 15s
+        labels: {severity: critical}
+        annotations: {summary: PostgreSQL connection budget exhausted, runbook: INCIDENTS.md}
+      - alert: RedisUnavailable
+        expr: redis_up == 0
+        for: 15s
+        labels: {severity: critical}
+        annotations: {summary: Redis unavailable, runbook: INCIDENTS.md}
+      - alert: BrokerBacklog
+        expr: sum(rabbitmq_queue_messages_ready) > 100
+        for: 2m
+        labels: {severity: warning}
+        annotations: {summary: RabbitMQ backlog growing, runbook: RUNBOOK.md}
+      - alert: NginxUpstreamErrors
+        expr: sum(rate(http_requests_total{status=~"5.."}[1m])) > 0
+        for: 1m
+        labels: {severity: warning}
+        annotations: {summary: Backend returning server errors; correlate proxy logs, runbook: INCIDENTS.md}
+      - alert: ContainerCpuPressure
+        expr: sum by (id) (rate(container_cpu_usage_seconds_total{id=~"/docker/[0-9a-f]{64}"}[1m])) / on (id) (max by (id) (container_spec_cpu_quota / container_spec_cpu_period) > 0) > 0.8
+        for: 15s
+        labels: {severity: warning}
+        annotations: {summary: Bounded lab container consuming its CPU budget, runbook: INCIDENTS.md}
+      - alert: NodeDiskLow
+        expr: node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes < 0.1
+        for: 5m
+        labels: {severity: warning}
+        annotations: {summary: Filesystem free space below ten percent, runbook: RUNBOOK.md}
+      - alert: ExporterUnavailable
+        expr: up{job=~"postgres|redis|nginx|rabbitmq|node|containers"} == 0
+        for: 1m
+        labels: {severity: warning}
+        annotations: {summary: Exporter unavailable; do not interpret missing metrics as healthy, runbook: RUNBOOK.md}
+
+      - alert: BackendCpuHigh
+        expr: rate(process_cpu_seconds_total{job="backend"}[2m]) > 0.45
+        for: 2m
+        labels: {severity: warning}
+        annotations: {summary: Backend near half-core CPU budget, runbook: RUNBOOK.md}

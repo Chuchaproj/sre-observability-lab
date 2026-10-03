@@ -1,0 +1,8 @@
+groups:
+  - name: nginx-edge
+    rules:
+      - alert: NginxGatewayErrors
+        expr: sum(count_over_time({job="nginx", status=~"502|504"}[1m])) > 0
+        for: 15s
+        labels: {severity: critical}
+        annotations: {summary: Nginx gateway errors in access logs, runbook: INCIDENTS.md}
