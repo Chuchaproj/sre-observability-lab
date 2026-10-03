@@ -39,6 +39,7 @@ async def lifespan(app):
     try:
         await pool.wait(timeout=30)
         async with pool.connection() as conn:
+            await conn.execute("SELECT pg_advisory_xact_lock(42810)")
             await conn.execute("CREATE TABLE IF NOT EXISTS items (id BIGSERIAL PRIMARY KEY, name TEXT NOT NULL)")
         async with pool.connection() as conn:
             await conn.execute("CREATE TABLE IF NOT EXISTS processed_jobs (id UUID PRIMARY KEY, name TEXT NOT NULL)")
@@ -176,14 +177,22 @@ jobs = Counter("jobs_processed_total", "Durably processed jobs")
 async def consume(queue, pool):
     async with queue.iterator() as messages:
         async for message in messages:
-            async with message.process(requeue=True):
-                payload = json.loads(message.body)
-                async with pool.connection() as conn:
-                    await conn.execute(
-                        "INSERT INTO processed_jobs(id, name) VALUES (%s, %s) ON CONFLICT (id) DO NOTHING",
-                        (payload["id"], payload["name"]))
-                jobs.inc()
-                logger.info(json.dumps({"event": "job_processed", "id": payload["id"]}))
+            try:
+                async with message.process(requeue=True):
+                    payload = json.loads(message.body)
+                    async with pool.connection() as conn:
+                        cursor = await conn.execute(
+                            "INSERT INTO processed_jobs(id, name) VALUES (%s, %s) ON CONFLICT (id) DO NOTHING",
+                            (payload["id"], payload["name"]))
+                    if cursor.rowcount == 1:
+                        jobs.inc()
+                    logger.info(json.dumps({"event": "job_processed", "id": payload["id"]}))
+            except asyncio.CancelledError:
+                raise
+            except Exception as error:
+                failures.labels("worker").inc()
+                logger.warning(json.dumps({"event": "job_retry", "error": type(error).__name__}))
+                await asyncio.sleep(1)
 
 
 @app.post("/jobs", status_code=202)

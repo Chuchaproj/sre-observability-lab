@@ -1,0 +1,23 @@
+# Controlled incident exercises
+
+Only use this repository's Compose project. Run `make smoke` first and recover after each exercise. Fault evidence is an exercise, not a report about a real customer incident.
+
+## 1. Backend latency
+
+Inject: `bash scripts/incident.sh latency`; run k6. Adds one second to GET `/items`, below Nginx's two-second timeout. Symptom: slow 200s and failed k6 p95 threshold. Metrics: histogram buckets, p95/p99, RPS; logs: backend duration_seconds and Nginx request_time. Diagnose: `docker compose logs --tail=50 backend`; `docker compose exec backend printenv LAB_LATENCY_SECONDS`. Root cause in this drill: configured artificial sleep, not proven CPU or SQL saturation. Recovery: `make recover`; assert p95 recedes under fresh traffic. Prevention: latency budgets, dependency timing, cancellation and release smoke thresholds. For a 504 variant run `python3 scripts/set-latency.py 3` then recreate backend; Nginx times out before it responds.
+
+## 2. PostgreSQL connection exhaustion
+
+Inject: `bash scripts/incident.sh postgres`. The bounded blocker terminates only lab-backend DB sessions, holds up to the lab's 30 connection slots for 120 seconds, and then closes them. Symptom: API 503/timeouts, pool acquisition failures; reconnect races can leave a working connection, so use concurrent requests rather than claiming every call fails. Metrics: `pg_stat_database_numbackends`, `pg_settings_max_connections`, dependency errors, latency; exporter may itself lose its slot. Logs: `docker compose logs postgres backend db-exhaust`. Diagnose: `docker compose exec postgres psql -U platform -d platform -c 'SELECT application_name,state,count(*) FROM pg_stat_activity GROUP BY 1,2;'` (may fail when no slots remain); inspect the blocker log as a separate signal. Root cause in drill: occupied server connection budget and bounded API pool, not slow SQL by assumption. Recovery: `docker compose stop db-exhaust`, then `make recover` and write/read smoke. Prevention: budget all replica/worker/exporter pools, reserve administration capacity, use a pooler and backpressure; increasing max_connections blindly can worsen RAM pressure.
+
+## 3. Redis unavailable
+
+Inject: `bash scripts/incident.sh redis`. Symptom: GET `/items` returns 503; liveness stays 200 while readiness fails. Metrics: redis_up=0, dependency_failures_total, HTTP 5xx. Logs: backend and redis. Diagnose: `docker compose ps -a redis`; `docker compose exec redis redis-cli ping`; inspect DNS/reachability before assigning other causes. Root cause here: deliberately stopped required dependency. Recovery: `make recover`; smoke test, watch 5xx recede. Prevention: optional-cache fallback where safe, circuit breaker, bounded retry, replication and capacity tests. POST may still commit during an outage: do not retry without idempotency.
+
+## 4. Nginx gateway errors
+
+Inject: `bash scripts/incident.sh nginx`. Request `/items`; Nginx DNS/TCP cannot reach the stopped upstream and returns 502. Use the latency-three-seconds variant above for 504. Metrics: nginx_up can remain 1; backend up=0; backend HTTP counters cannot see rejected edge requests. Logs: Loki `{job="nginx", status=~"502|504"}`, Nginx stderr. Diagnose: `docker compose logs nginx backend`; `curl -i http://127.0.0.1:8180/items`; `docker compose exec nginx nginx -t`. Root cause here: upstream stopped/timeout. Distinguish DNS resolution, TCP connect failure and upstream read timeout from HTTP errors returned by the app. Recovery: `make recover` and smoke through Nginx. Prevention: readiness-aware routing, time budgets, multiple upstream replicas and end-to-end edge probes.
+
+## 5. Bounded resource exhaustion
+
+Inject: `bash scripts/incident.sh resources`. A separate container allocates 48 MiB under a 64 MiB limit and spins under 0.25 CPU for at most 120 seconds. Symptom: this container consumes most of its CPU quota; API may remain healthy, which is evidence of isolation. Metrics: container_cpu_usage_seconds_total, throttling counters, memory_working_set_bytes; host CPU/RAM provide context. Logs: resource container may have no application logs; do not invent them. Diagnose: `docker stats --no-stream`; `docker compose ps resource-pressure`; `docker inspect srelab-resource-pressure-1 --format '{{.State.OOMKilled}}'`. Root cause here: bounded synthetic CPU/RAM consumption; this is the resource-exhaustion alternative, not a disk-full drill. Recovery: stop resource-pressure or wait for automatic exit, then `make smoke`. Prevention: requests/limits, per-workload budgets, headroom and saturation alerts. Never fill the Docker Desktop disk or stress unrelated host processes.
