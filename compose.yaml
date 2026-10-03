@@ -111,7 +111,6 @@ services:
   cadvisor:
     image: ghcr.io/google/cadvisor:v0.60.3
     privileged: true
-    devices: [/dev/kmsg]
     volumes: ['/:/rootfs:ro', '/var/run/docker.sock:/var/run/docker.sock:ro', '/sys:/sys:ro', '/var/lib/docker:/var/lib/docker:ro']
   load:
     image: grafana/k6:1.0.0
@@ -126,7 +125,7 @@ services:
     command: [python, /scripts/exhaust-db.py]
     volumes: ['./scripts:/scripts:ro']
   resource-pressure:
-    image: python:3.11.13-slim-bookworm
+    image: srelab-backend:local
     profiles: [incidents]
     mem_limit: 64m
     cpus: 0.25

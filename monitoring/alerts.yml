@@ -1,5 +1,5 @@
 groups:
-  - name: platform
+  - name: srelab
     rules:
       - alert: BackendUnavailable
         expr: up{job="backend"} == 0
@@ -42,11 +42,6 @@ groups:
         for: 2m
         labels: {severity: warning}
         annotations: {summary: RabbitMQ backlog growing, runbook: RUNBOOK.md}
-      - alert: NginxUpstreamErrors
-        expr: sum(rate(http_requests_total{status=~"5.."}[1m])) > 0
-        for: 1m
-        labels: {severity: warning}
-        annotations: {summary: Backend returning server errors; correlate proxy logs, runbook: INCIDENTS.md}
       - alert: ContainerCpuPressure
         expr: sum by (id) (rate(container_cpu_usage_seconds_total{id=~"/docker/[0-9a-f]{64}"}[1m])) / on (id) (max by (id) (container_spec_cpu_quota / container_spec_cpu_period) > 0) > 0.8
         for: 15s

@@ -16,7 +16,7 @@ from psycopg_pool import AsyncConnectionPool
 from pydantic import BaseModel, Field
 from redis.asyncio import Redis
 
-logger = logging.getLogger("platform")
+logger = logging.getLogger("srelab")
 logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler())
 log_dir = os.getenv("LOG_DIR")
@@ -63,7 +63,7 @@ async def lifespan(app):
         await pool.close()
 
 
-app = FastAPI(title="Homelab platform", lifespan=lifespan)
+app = FastAPI(title="SRE observability lab", lifespan=lifespan)
 
 
 @app.middleware("http")
@@ -146,7 +146,7 @@ async def list_items():
         raise HTTPException(503, "Cache unavailable") from None
     try:
         async with app.state.pool.connection() as conn:
-            cursor = await conn.execute("SELECT id, name FROM items ORDER BY id LIMIT 100")
+            cursor = await conn.execute("SELECT id, name FROM items ORDER BY id DESC LIMIT 100")
             rows = await cursor.fetchall()
     except Exception:
         failures.labels("postgres").inc()
@@ -212,7 +212,7 @@ async def enqueue(item: Item):
 async def processed_jobs():
     try:
         async with app.state.pool.connection() as conn:
-            cursor = await conn.execute("SELECT id, name FROM processed_jobs ORDER BY id LIMIT 100")
+            cursor = await conn.execute("SELECT id, name FROM processed_jobs ORDER BY id DESC LIMIT 100")
             rows = await cursor.fetchall()
     except Exception:
         raise HTTPException(503, "Database unavailable") from None
