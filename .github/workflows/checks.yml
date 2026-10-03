@@ -14,6 +14,15 @@ jobs:
       - run: .venv/bin/ruff check app tests scripts && shellcheck scripts/*.sh && yamllint -c .yamllint compose.yaml monitoring .github
       - uses: hadolint/hadolint-action@v3.1.0
         with: {dockerfile: Dockerfile}
+      - name: Install Docker Compose
+        run: |
+          cd "$RUNNER_TEMP"
+          curl -fsSLO https://github.com/docker/compose/releases/download/v5.1.4/docker-compose-linux-x86_64
+          curl -fsSLO https://github.com/docker/compose/releases/download/v5.1.4/checksums.txt
+          sha256sum --ignore-missing -c checksums.txt
+          mkdir -p "$HOME/.docker/cli-plugins"
+          install -m 0755 docker-compose-linux-x86_64 "$HOME/.docker/cli-plugins/docker-compose"
+          docker compose version
       - run: make init up smoke
       - run: docker compose run --rm --no-deps --entrypoint promtool prometheus check config /etc/prometheus/prometheus.yml
       - run: docker compose run --rm --no-deps --entrypoint promtool prometheus test rules /etc/prometheus/rule-tests.yml
