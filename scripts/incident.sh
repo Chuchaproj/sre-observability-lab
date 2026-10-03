@@ -4,7 +4,7 @@ scenario="${1:?Usage: incident.sh latency|postgres|redis|nginx|resources|recover
 case "$scenario" in
   latency)
     python3 scripts/set-latency.py 1
-    docker compose up -d --no-deps --force-recreate backend
+    docker compose up -d --no-deps --force-recreate --wait --wait-timeout 120 backend
     ;;
   postgres) docker compose --profile incidents up -d db-exhaust ;;
   redis) docker compose stop redis ;;
@@ -14,7 +14,7 @@ case "$scenario" in
     python3 scripts/set-latency.py 0
     docker compose --profile incidents stop db-exhaust resource-pressure
     docker compose start redis
-    docker compose up -d --no-deps --force-recreate backend
+    docker compose up -d --no-deps --force-recreate --wait --wait-timeout 120 backend
     python3 scripts/smoke.py
     ;;
   *) echo 'Unknown scenario' >&2; exit 2 ;;
