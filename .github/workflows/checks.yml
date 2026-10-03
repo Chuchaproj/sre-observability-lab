@@ -23,9 +23,10 @@ jobs:
           test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8180/items)" = 503
           make recover
       - name: Image vulnerability gate
-        uses: aquasecurity/trivy-action@6c175e9c4083a92bbca2f9724c8a5e33bc2d97a5  # v0.30.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
         with:
           image-ref: srelab-backend:local
+          version: v0.75.0
           format: table
           severity: CRITICAL,HIGH
           exit-code: '1'
