@@ -21,3 +21,7 @@ load:
 	docker compose --profile load run --rm load
 recover:
 	bash scripts/incident.sh recover
+
+.PHONY: secrets
+secrets:
+	bash scripts/check-secrets.sh

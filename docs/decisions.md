@@ -13,3 +13,5 @@ Docker Desktop with the containerd image store exposes raw cgroup IDs through cA
 Redis stores a five-second versioned list cache. PostgreSQL writes commit before generation invalidation; failed invalidation can leave stale reads until TTL expiry. Redis is deliberately required, but PostgreSQL readiness is still checked even when a cached list exists.
 
 Schema bootstrap acquires a transaction-scoped PostgreSQL advisory lock before table creation, preventing concurrent replica DDL races. This is a minimal lab bootstrap, not a substitute for versioned production migrations.
+
+`make secrets` scans Git history, staged changes and an exported tracked source tree. Generated ignored local credentials are not publication content, but a forced/staged secret file is still inspected. There is no allowlist for credential-bearing .env paths.
