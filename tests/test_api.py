@@ -66,3 +66,56 @@ def test_versioned_cache_and_write_invalidation(client):
     assert app.state.cache.setex.await_count == 0
     assert client.post("/items", json={"name": "new"}).status_code == 201
     app.state.cache.incr.assert_awaited_once_with("items:version")
+
+
+def test_worker_retries_and_deduplicates(monkeypatch):
+    import asyncio
+
+    from app.main import consume, jobs
+
+    outcomes = []
+
+    class Message:
+        body = b'{"id":"eb7a812a-3346-4f92-a64b-f44e6260c915","name":"job"}'
+
+        @asynccontextmanager
+        async def process(self, requeue):
+            assert requeue
+            try:
+                yield
+            except Exception:
+                outcomes.append("nack")
+                raise
+            else:
+                outcomes.append("ack")
+
+    class Messages:
+        def __aiter__(self):
+            self.messages = iter([Message(), Message(), Message()])
+            return self
+
+        async def __anext__(self):
+            try:
+                return next(self.messages)
+            except StopIteration:
+                raise StopAsyncIteration from None
+
+    class Queue:
+        @asynccontextmanager
+        async def iterator(self):
+            yield Messages()
+
+    execute = AsyncMock(side_effect=[ConnectionError(), SimpleNamespace(rowcount=1),
+                                    SimpleNamespace(rowcount=0)])
+
+    class WorkerPool:
+        @asynccontextmanager
+        async def connection(self):
+            yield SimpleNamespace(execute=execute)
+
+    monkeypatch.setattr("app.main.asyncio.sleep", AsyncMock())
+    before = jobs._value.get()
+    asyncio.run(consume(Queue(), WorkerPool()))
+    assert outcomes == ["nack", "ack", "ack"]
+    assert execute.await_count == 3
+    assert jobs._value.get() == before + 1
