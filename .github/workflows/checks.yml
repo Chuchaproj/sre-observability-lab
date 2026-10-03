@@ -22,6 +22,13 @@ jobs:
           bash scripts/incident.sh redis
           test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8180/items)" = 503
           make recover
+      - name: Image vulnerability gate
+        uses: aquasecurity/trivy-action@0.30.0
+        with:
+          image-ref: srelab-backend:local
+          format: table
+          severity: CRITICAL,HIGH
+          exit-code: '1'
       - run: make load
       - if: always()
         run: docker compose logs --no-color && make down
